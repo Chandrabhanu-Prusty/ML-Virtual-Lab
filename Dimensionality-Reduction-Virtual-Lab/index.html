@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dimensionality Reduction Virtual Lab | PCA, SVD, t-SNE & UMAP</title>
+  <meta name="description" content="College Machine Learning Virtual Laboratory for Dimensionality Reduction using PCA, SVD, t-SNE, and UMAP on the Wisconsin Diagnostic Breast Cancer dataset.">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- Plotly.js CDN -->
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+  <!-- UMAP-js CDN with local fallback -->
+  <script src="https://cdn.jsdelivr.net/npm/umap-js@1.4.0/lib/umap-js.min.js"></script>
+  <script>
+    if (typeof UMAP === 'undefined') {
+      document.write('<script src="js/lib/umap-js.min.js"><\/script>');
+    }
+  </script>
+
+  <!-- t-SNE (Karpathy tsnejs) CDN with local fallback -->
+  <script src="https://cdn.jsdelivr.net/gh/karpathy/tsnejs@master/tsne.js"></script>
+  <script>
+    if (typeof tsnejs === 'undefined') {
+      document.write('<script src="js/lib/tsne.js"><\/script>');
+    }
+  </script>
+
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- MOBILE TOPBAR -->
+  <header class="mobile-topbar">
+    <div class="mobile-brand">
+      <img src="assets/logo.svg" alt="Lab Logo" width="28" height="28">
+      <span>DimReduction Lab</span>
+    </div>
+    <button class="btn-mobile-menu" id="mobileMenuToggle" aria-label="Toggle Navigation">
+      <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+    </button>
+  </header>
+
+  <!-- DESKTOP SIDEBAR NAVIGATION -->
+  <aside class="app-sidebar" id="appSidebar">
+    <div class="sidebar-header">
+      <img src="assets/logo.svg" alt="Virtual Lab Logo" class="sidebar-logo">
+      <div class="sidebar-brand">
+        <h1>Virtual ML Lab</h1>
+        <span>Sem 5 • Machine Learning</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Laboratory Navigation</div>
+      <a href="#aim" class="nav-link active">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        1. Home / Aim
+      </a>
+      <a href="#theory" class="nav-link">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        2. Theory
+      </a>
+      <a href="#procedure" class="nav-link">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+        3. Procedure
+      </a>
+      <a href="#simulation" class="nav-link">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        4. Simulation
+      </a>
+      <a href="#observations" class="nav-link">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        5. Results & Analysis
+      </a>
+      <a href="#contributors" class="nav-link">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        6. Project Team
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="report.html" class="btn-report-nav" target="_blank">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        View Academic Report
+      </a>
+      <div class="dataset-badge-sidebar" id="datasetStatusBadge">
+        <span class="status-dot"></span> Loading WDBC...
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN WRAPPER -->
+  <main class="main-wrapper">
+    <div class="content-container">
+
+      <!-- ====================================================================
+           SECTION 1: HOME / AIM
+           ==================================================================== -->
+      <section class="lab-section" id="aim">
+        <div class="hero-banner">
+          <div class="hero-badge-row">
+            <span class="badge badge-purple">Experiment #04</span>
+            <span class="badge badge-emerald">Interactive Virtual Lab</span>
+            <span class="badge badge-blue">UCI WDBC Dataset</span>
+          </div>
+
+          <h2 class="hero-title">Dimensionality Reduction Using PCA, SVD, t-SNE & UMAP</h2>
+          
+          <div class="hero-aim-box">
+            <h4>Experiment Aim</h4>
+            <p>
+              To apply linear (<strong>PCA</strong>, <strong>SVD</strong>) and non-linear (<strong>t-SNE</strong>, <strong>UMAP</strong>) dimensionality reduction 
+              techniques on a high-dimensional biomedical dataset (Wisconsin Diagnostic Breast Cancer, 30 features), analyze feature contributions, 
+              visualize low-dimensional manifold projections, and evaluate the empirical impact of reduced representations on classification accuracy.
+            </p>
+          </div>
+
+          <!-- Dataset Statistics Grid -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon icon-purple">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+              </div>
+              <div class="stat-data">
+                <span class="stat-val" id="statTotalSamples">569</span>
+                <span class="stat-lbl">Total Samples</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon icon-cyan">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3zm0 5h16"/></svg>
+              </div>
+              <div class="stat-data">
+                <span class="stat-val" id="statNumFeatures">30</span>
+                <span class="stat-lbl">Numerical Features (D)</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon icon-emerald">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <div class="stat-data">
+                <span class="stat-val" id="statBenign">357 (62.74%)</span>
+                <span class="stat-lbl">Benign Cases (B)</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon icon-rose">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              </div>
+              <div class="stat-data">
+                <span class="stat-val" id="statMalignant">212 (37.26%)</span>
+                <span class="stat-lbl">Malignant Cases (M)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           SECTION 2: THEORY
+           ==================================================================== -->
+      <section class="lab-section" id="theory">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <span class="section-number">Section 02</span>
+            <h3 class="section-title">Theoretical Foundations</h3>
+          </div>
+          <p class="section-desc">
+            Mathematical background on the curse of dimensionality, linear projection techniques, and non-linear manifold learning.
+          </p>
+        </div>
+
+        <!-- Concept Cards -->
+        <div class="theory-cards-grid">
+          <!-- Curse of Dimensionality -->
+          <div class="theory-card">
+            <div class="theory-header">
+              <h4 class="theory-title">Curse of Dimensionality</h4>
+              <span class="theory-badge badge-linear">Foundational Problem</span>
+            </div>
+            <div class="theory-body">
+              As the number of features \( D \) grows, the volume of the feature space increases exponentially (\( V \propto r^D \)), 
+              causing the available data points to become extremely sparse. In high-dimensional spaces, pairwise Euclidean distances 
+              converge to a uniform constant, degrading distance-based metrics (KNN, clustering, SVM) and increasing overfitting risk.
+            </div>
+            <div class="formula-box">
+              <span>Distance Concentration Effect:</span>
+              <span class="formula-highlight">\(\lim_{D \to \infty} \frac{\text{dist}_{\max} - \text{dist}_{\min}}{\text{dist}_{\min}} \to 0\)</span>
+            </div>
+          </div>
+
+          <!-- Feature Selection vs Extraction -->
+          <div class="theory-card">
+            <div class="theory-header">
+              <h4 class="theory-title">Selection vs Extraction</h4>
+              <span class="theory-badge badge-linear">Methodology</span>
+            </div>
+            <div class="theory-body">
+              <strong>Feature Selection</strong> picks a subset of the original features without alteration (e.g. Mutual Information, RFE), 
+              preserving physical interpretability. <br><br>
+              <strong>Feature Extraction</strong> transforms the original \( D \)-dimensional space into a new \( k \)-dimensional coordinate system 
+              (\( k \ll D \)) by constructing composite variables that retain maximal variance or manifold topology.
+            </div>
+            <div class="formula-box">
+              <span>Transformation Mapping:</span>
+              <span class="formula-highlight">\(f: \mathbb{R}^D \to \mathbb{R}^k \quad \text{where } k \ll D\)</span>
+            </div>
+          </div>
+
+          <!-- PCA -->
+          <div class="theory-card">
+            <div class="theory-header">
+              <h4 class="theory-title">Principal Component Analysis (PCA)</h4>
+              <span class="theory-badge badge-linear">Linear / Orthogonal</span>
+            </div>
+            <div class="theory-body">
+              PCA finds orthogonal axes (principal components) along which the variance of the data is maximized. It constructs the sample covariance 
+              matrix \( \mathbf{\Sigma} \) and computes its spectral decomposition.
+            </div>
+            <div class="formula-box">
+              <span>Covariance & Eigenvalues:</span>
+              <span class="formula-highlight">\(\mathbf{\Sigma} = \frac{1}{N-1} \mathbf{X}_{std}^T \mathbf{X}_{std}, \quad \mathbf{\Sigma} \mathbf{v}_i = \lambda_i \mathbf{v}_i\)</span>
+              <span>Explained Variance: \(EVR_i = \lambda_i / \sum_j \lambda_j\)</span>
+            </div>
+            <div class="pros-cons-grid">
+              <div class="pros-box">
+                <strong>Advantages</strong>
+                <ul>
+                  <li>Global variance preservation</li>
+                  <li>Fast exact analytical solution</li>
+                  <li>Zero hyperparameters</li>
+                </ul>
+              </div>
+              <div class="cons-box">
+                <strong>Limitations</strong>
+                <ul>
+                  <li>Linear transformations only</li>
+                  <li>Sensitive to feature scaling</li>
+                  <li>Assumes orthogonal variance</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- SVD -->
+          <div class="theory-card">
+            <div class="theory-header">
+              <h4 class="theory-title">Singular Value Decomposition (SVD)</h4>
+              <span class="theory-badge badge-linear">Linear / Factorization</span>
+            </div>
+            <div class="theory-body">
+              SVD factors any real matrix into three constituent matrices \( \mathbf{X} = \mathbf{U} \mathbf{S} \mathbf{V}^T \). Truncated SVD provides 
+              the optimal low-rank matrix approximation according to the Eckart-Young-Mirsky theorem.
+            </div>
+            <div class="formula-box">
+              <span>Matrix Factorization:</span>
+              <span class="formula-highlight">\(\mathbf{X} = \mathbf{U} \mathbf{S} \mathbf{V}^T, \quad \mathbf{Z}_k = \mathbf{X} \mathbf{V}_k = \mathbf{U}_k \mathbf{S}_k\)</span>
+              <span>Singular Energy: \(\sigma_i = \sqrt{\lambda_i(\mathbf{X}^T \mathbf{X})}\)</span>
+            </div>
+            <div class="pros-cons-grid">
+              <div class="pros-box">
+                <strong>Advantages</strong>
+                <ul>
+                  <li>Optimal low-rank approximation</li>
+                  <li>Handles rectangular & sparse matrices</li>
+                  <li>Directly related to PCA</li>
+                </ul>
+              </div>
+              <div class="cons-box">
+                <strong>Limitations</strong>
+                <ul>
+                  <li>Constrained to linear hyperplanes</li>
+                  <li>Computationally heavier for huge N</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- t-SNE -->
+          <div class="theory-card">
+            <div class="theory-header">
+              <h4 class="theory-title">t-Distributed Stochastic Neighbor Embedding</h4>
+              <span class="theory-badge badge-nonlinear">Non-Linear / Manifold</span>
+            </div>
+            <div class="theory-body">
+              t-SNE converts high-dimensional Euclidean distances into conditional probabilities \( p_{j|i} \) (Gaussian) and low-dimensional 
+              distances into probabilities \( q_{ij} \) (Student-t with 1 degree of freedom). It minimizes the Kullback-Leibler (KL) divergence via gradient descent.
+            </div>
+            <div class="formula-box">
+              <span>Kernel Probabilities & Loss:</span>
+              <span class="formula-highlight">\(q_{ij} = \frac{(1 + \|\mathbf{y}_i - \mathbf{y}_j\|^2)^{-1}}{\sum_{k \neq l} (1 + \|\mathbf{y}_k - \mathbf{y}_l\|^2)^{-1}}\)</span>
+              <span>Loss: \(KL(P || Q) = \sum_{i \neq j} p_{ij} \log \frac{p_{ij}}{q_{ij}}\)</span>
+            </div>
+            <div class="pros-cons-grid">
+              <div class="pros-box">
+                <strong>Advantages</strong>
+                <ul>
+                  <li>Resolves crowding problem</li>
+                  <li>Reveals intricate non-linear clusters</li>
+                  <li>Exceptional exploratory visualization</li>
+                </ul>
+              </div>
+              <div class="cons-box">
+                <strong>Limitations</strong>
+                <ul>
+                  <li>Does not preserve global distances</li>
+                  <li>\(O(N^2)\) computational cost</li>
+                  <li>Cannot project new unseen points</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- UMAP -->
+          <div class="theory-card">
+            <div class="theory-header">
+              <h4 class="theory-title">Uniform Manifold Approximation & Projection</h4>
+              <span class="theory-badge badge-nonlinear">Non-Linear / Topological</span>
+            </div>
+            <div class="theory-body">
+              UMAP assumes the data lies on a local Riemannian manifold with locally constant metric. It constructs a fuzzy simplicial set representation 
+              in high dimensions and optimizes a corresponding low-dimensional layout using fuzzy set cross-entropy.
+            </div>
+            <div class="formula-box">
+              <span>Fuzzy Cross-Entropy Loss:</span>
+              <span class="formula-highlight">\(C = \sum_{e} \mu(e) \log \frac{\mu(e)}{\nu(e)} + (1 - \mu(e)) \log \frac{1 - \mu(e)}{1 - \nu(e)}\)</span>
+            </div>
+            <div class="pros-cons-grid">
+              <div class="pros-box">
+                <strong>Advantages</strong>
+                <ul>
+                  <li>Preserves both local AND global structure</li>
+                  <li>Orders of magnitude faster than t-SNE</li>
+                  <li>Supports embedding out-of-sample points</li>
+                </ul>
+              </div>
+              <div class="cons-box">
+                <strong>Limitations</strong>
+                <ul>
+                  <li>Hyperparameter sensitivity (n_neighbors)</li>
+                  <li>Stochastic non-deterministic optimization</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comparative Summary Table -->
+        <div class="table-responsive" style="margin-top: 14px;">
+          <table class="theory-table">
+            <thead>
+              <tr>
+                <th>Property</th>
+                <th>PCA</th>
+                <th>SVD</th>
+                <th>t-SNE</th>
+                <th>UMAP</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Transformation Type</strong></td>
+                <td>Linear Orthogonal</td>
+                <td>Linear Matrix Factorization</td>
+                <td>Non-Linear Probabilistic</td>
+                <td>Non-Linear Topological Manifold</td>
+              </tr>
+              <tr>
+                <td><strong>Preserved Structure</strong></td>
+                <td>Maximal Global Variance</td>
+                <td>Maximal Energy (Low-rank)</td>
+                <td>Local Neighborhoods</td>
+                <td>Local & Semi-Global Manifold</td>
+              </tr>
+              <tr>
+                <td><strong>Time Complexity</strong></td>
+                <td>\(O(M^3 + N M^2)\) (Instant)</td>
+                <td>\(O(M^3 + N M^2)\) (Instant)</td>
+                <td>\(O(N^2)\) / \(O(N \log N)\) (Iterative)</td>
+                <td>\(O(N \log N)\) (Fast Iterative)</td>
+              </tr>
+              <tr>
+                <td><strong>New Point Projection?</strong></td>
+                <td>Yes (\(\mathbf{Z} = \mathbf{X}_{new} \mathbf{V}_k\))</td>
+                <td>Yes (\(\mathbf{Z} = \mathbf{X}_{new} \mathbf{V}_k\))</td>
+                <td>No (Requires full re-run)</td>
+                <td>Yes (Via approximate k-NN)</td>
+              </tr>
+              <tr>
+                <td><strong>Key Hyperparameters</strong></td>
+                <td>Number of components \(k\)</td>
+                <td>Rank \(k\)</td>
+                <td>Perplexity, Learning Rate, Iterations</td>
+                <td>n_neighbors, min_dist, metric</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           SECTION 3: PROCEDURE
+           ==================================================================== -->
+      <section class="lab-section" id="procedure">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <span class="section-number">Section 03</span>
+            <h3 class="section-title">Laboratory Procedure</h3>
+          </div>
+          <p class="section-desc">
+            Follow these sequential laboratory steps to execute dimensionality reduction, visualize latent features, and benchmark machine learning performance.
+          </p>
+        </div>
+
+        <div class="procedure-steps">
+          <div class="step-card">
+            <div class="step-num">01</div>
+            <div class="step-content">
+              <h4 class="step-title">Load High-Dimensional Dataset</h4>
+              <p class="step-desc">Acquire the official UCI Wisconsin Diagnostic Breast Cancer (WDBC) dataset comprising 569 patient biopsy samples.</p>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">02</div>
+            <div class="step-content">
+              <h4 class="step-title">Separate Features and Target Labels</h4>
+              <p class="step-desc">Parse the raw CSV: isolate the diagnosis label column (\( M \) = Malignant, \( B \) = Benign) and extract the 30 continuous numerical morphological features.</p>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">03</div>
+            <div class="step-content">
+              <h4 class="step-title">Verify Data Integrity & Missing Values</h4>
+              <p class="step-desc">Inspect for missing, NaN, or corrupted values. The UCI WDBC dataset is complete with 0 missing entries across all 569 records.</p>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">04</div>
+            <div class="step-content">
+              <h4 class="step-title">Standardize Features via Z-Score Normalization</h4>
+              <p class="step-desc">Compute mean \(\mu_j\) and sample standard deviation \(\sigma_j\) for each of the 30 features. Standardize each value: \(z_{ij} = (x_{ij} - \mu_j) / \sigma_j\). This prevents features with large numeric scales (e.g., <em>area</em>) from dominating variance.</p>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">05</div>
+            <div class="step-content">
+              <h4 class="step-title">Apply Principal Component Analysis (PCA)</h4>
+              <p class="step-desc">Calculate the 30×30 sample covariance matrix. Solve eigenvalues and eigenvectors using the Jacobi rotation algorithm. Project samples onto the top 2 and 3 principal components.</p>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">06</div>
+            <div class="step-content">
+              <h4 class="step-title">Apply Singular Value Decomposition (SVD)</h4>
+              <p class="step-desc">Compute the Gram matrix \(\mathbf{X}^T \mathbf{X}\) and decompose into singular values and right singular vectors. Project data into optimal low-rank coordinates.</p>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">07</div>
+            <div class="step-content">
+              <h4 class="step-title">Apply t-SNE Non-Linear Manifold Embedding</h4>
+              <p class="step-desc">Compute pairwise high-dimensional Gaussian joint probabilities with user-specified perplexity. Optimize Student-t low-dimensional coordinates via gradient descent.</p>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">08</div>
+            <div class="step-content">
+              <h4 class="step-title">Apply UMAP Fuzzy Simplicial Set Learning</h4>
+              <p class="step-desc">Construct the k-nearest neighbor fuzzy simplicial set graph and project onto low-dimensional space using cross-entropy minimization.</p>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">09</div>
+            <div class="step-content">
+              <h4 class="step-title">Visualize Latent Embeddings</h4>
+              <p class="step-desc">Generate interactive 2D and 3D Plotly scatter plots color-coding Benign (green) and Malignant (red) classes to inspect cluster separation.</p>
+            </div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">10</div>
+            <div class="step-content">
+              <h4 class="step-title">Train Classifier & Compare Accuracy</h4>
+              <p class="step-desc">Split dataset into 70% train and 30% test sets. Train a Logistic Regression classifier on: (1) original 30 features, and (2) reduced feature representations. Compare Accuracy, Precision, Recall, and F1-score.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           SECTION 4: INTERACTIVE SIMULATION (CORE)
+           ==================================================================== -->
+      <section class="lab-section" id="simulation">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <span class="section-number">Section 04</span>
+            <h3 class="section-title">Interactive Simulation Laboratory</h3>
+          </div>
+          <p class="section-desc">
+            Select an algorithm tab, customize its mathematical parameters, execute the reduction, and inspect the resulting coordinate manifold.
+          </p>
+        </div>
+
+        <div class="sim-container">
+          <!-- Algorithm Tabs -->
+          <div class="sim-tabs-header">
+            <button class="sim-tab-btn active" data-algo="PCA">
+              PCA <span class="tab-badge">Linear</span>
+            </button>
+            <button class="sim-tab-btn" data-algo="SVD">
+              SVD <span class="tab-badge">Factorization</span>
+            </button>
+            <button class="sim-tab-btn" data-algo="t-SNE">
+              t-SNE <span class="tab-badge">Non-Linear</span>
+            </button>
+            <button class="sim-tab-btn" data-algo="UMAP">
+              UMAP <span class="tab-badge">Topological</span>
+            </button>
+          </div>
+
+          <div class="sim-body">
+            <!-- Controls Panel -->
+            <div class="sim-controls-panel">
+              <!-- PCA Parameters -->
+              <div class="controls-row tab-params-panel" data-panel="PCA" style="display: flex;">
+                <div class="params-group">
+                  <div class="control-item">
+                    <label class="control-label" for="pcaComponents">Components (Dimensions)</label>
+                    <select id="pcaComponents" class="select-input">
+                      <option value="2" selected>2 Components (2D Plot)</option>
+                      <option value="3">3 Components (3D Plot)</option>
+                    </select>
+                  </div>
+                  <div class="control-item">
+                    <label class="control-label">Algorithm Nature</label>
+                    <span style="font-size: 0.85rem; color: var(--text-accent); padding: 8px 0;">Exact Jacobi Spectral Decomposition</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SVD Parameters -->
+              <div class="controls-row tab-params-panel" data-panel="SVD" style="display: none;">
+                <div class="params-group">
+                  <div class="control-item">
+                    <label class="control-label" for="svdComponents">Components (Singular Vectors)</label>
+                    <select id="svdComponents" class="select-input">
+                      <option value="2" selected>2 Singular Vectors (2D)</option>
+                      <option value="3">3 Singular Vectors (3D)</option>
+                    </select>
+                  </div>
+                  <div class="control-item">
+                    <label class="control-label">Factorization Mode</label>
+                    <span style="font-size: 0.85rem; color: var(--text-accent); padding: 8px 0;">Thin Truncated SVD (Gram Matrix)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- t-SNE Parameters -->
+              <div class="controls-row tab-params-panel" data-panel="t-SNE" style="display: none;">
+                <div class="params-group">
+                  <div class="control-item">
+                    <label class="control-label" for="tsneComponents">Dimensions</label>
+                    <select id="tsneComponents" class="select-input">
+                      <option value="2" selected>2 Dimensions (2D)</option>
+                      <option value="3">3 Dimensions (3D)</option>
+                    </select>
+                  </div>
+
+                  <div class="control-item">
+                    <div class="control-label">
+                      <span>Perplexity</span>
+                      <span class="control-val-tag" id="tsnePerplexityVal">30</span>
+                    </div>
+                    <input type="range" id="tsnePerplexity" class="range-slider" min="5" max="50" step="5" value="30">
+                  </div>
+
+                  <div class="control-item">
+                    <div class="control-label">
+                      <span>Iterations</span>
+                      <span class="control-val-tag" id="tsneIterationsVal">200</span>
+                    </div>
+                    <input type="range" id="tsneIterations" class="range-slider" min="100" max="400" step="50" value="200">
+                  </div>
+
+                  <div class="control-item">
+                    <label class="control-label" for="tsneSampleSize">Sample Size</label>
+                    <select id="tsneSampleSize" class="select-input">
+                      <option value="all" selected>All Samples (569)</option>
+                      <option value="250">Fast Subsample (250)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- UMAP Parameters -->
+              <div class="controls-row tab-params-panel" data-panel="UMAP" style="display: none;">
+                <div class="params-group">
+                  <div class="control-item">
+                    <label class="control-label" for="umapComponents">Dimensions</label>
+                    <select id="umapComponents" class="select-input">
+                      <option value="2" selected>2 Dimensions (2D)</option>
+                      <option value="3">3 Dimensions (3D)</option>
+                    </select>
+                  </div>
+
+                  <div class="control-item">
+                    <div class="control-label">
+                      <span>n_neighbors</span>
+                      <span class="control-val-tag" id="umapNeighborsVal">15</span>
+                    </div>
+                    <input type="range" id="umapNeighbors" class="range-slider" min="5" max="50" step="5" value="15">
+                  </div>
+
+                  <div class="control-item">
+                    <div class="control-label">
+                      <span>min_dist</span>
+                      <span class="control-val-tag" id="umapMinDistVal">0.10</span>
+                    </div>
+                    <input type="range" id="umapMinDist" class="range-slider" min="0.01" max="0.5" step="0.05" value="0.10">
+                  </div>
+
+                  <div class="control-item">
+                    <label class="control-label" for="umapSampleSize">Sample Size</label>
+                    <select id="umapSampleSize" class="select-input">
+                      <option value="all" selected>All Samples (569)</option>
+                      <option value="250">Fast Subsample (250)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Buttons Row -->
+              <div class="controls-row" style="border-top: 1px solid var(--border-color); padding-top: 14px;">
+                <div class="btn-group">
+                  <button class="btn btn-primary" id="btnRunSimulation">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Run Simulation
+                  </button>
+                  <button class="btn btn-secondary" id="btnResetParams">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    Reset
+                  </button>
+                </div>
+
+                <div class="btn-group">
+                  <button class="btn btn-secondary" id="btnExportEmbeddings">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download Coordinates (CSV)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Progress bar -->
+              <div class="sim-progress-box" id="simProgressBox">
+                <div class="sim-progress-text">
+                  <span id="simProgressText">Computing algorithm embedding...</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" id="simProgressFill"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Execution Metrics Ribbon -->
+            <div class="metrics-ribbon">
+              <div class="ribbon-item">
+                <div class="ribbon-lbl">Execution Time</div>
+                <div class="ribbon-val" id="ribbonRuntime" style="color: #38bdf8;">-- ms</div>
+              </div>
+              <div class="ribbon-item">
+                <div class="ribbon-lbl">Output Dimensions</div>
+                <div class="ribbon-val" id="ribbonDims">30 → 2D</div>
+              </div>
+              <div class="ribbon-item">
+                <div class="ribbon-lbl">Explained Variance</div>
+                <div class="ribbon-val" id="ribbonVariance" style="color: #a78bfa;">--%</div>
+              </div>
+              <div class="ribbon-item">
+                <div class="ribbon-lbl">Classifier Accuracy</div>
+                <div class="ribbon-val" id="ribbonAccuracy" style="color: #6ee7b7;">--%</div>
+              </div>
+            </div>
+
+            <!-- Main Interactive Plotly Chart Canvas -->
+            <div class="chart-display-card">
+              <div id="mainChartCanvas" class="chart-canvas"></div>
+            </div>
+
+            <!-- PCA Scree and Loadings Sub-Row (visible when PCA tab active) -->
+            <div class="sub-charts-grid" id="pcaSubChartsRow" style="display: grid;">
+              <div class="sub-chart-card">
+                <div id="pcaScreeCanvas" class="sub-chart-canvas"></div>
+              </div>
+              <div class="sub-chart-card">
+                <div id="pcaLoadingsCanvas" class="sub-chart-canvas"></div>
+              </div>
+            </div>
+
+            <!-- Graph Interpretation Card -->
+            <div class="interpretation-card">
+              <div class="interpretation-header">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="interpretation-title">Manifold Interpretation & Biological Correlation</span>
+              </div>
+              <div class="interpretation-text" id="graphInterpretationText">
+                Analyzing projection geometry...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIDE-BY-SIDE 4-ALGORITHM COMPARISON MATRIX -->
+        <div class="comparison-section-card" style="margin-top: 16px;">
+          <div class="section-header" style="border: none; padding: 0;">
+            <div class="section-title-wrap">
+              <h4 style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary);">
+                Multi-Algorithm Projection Matrix (Side-by-Side)
+              </h4>
+              <p style="font-size: 0.88rem; color: var(--text-secondary);">
+                Direct comparative visualization of Benign vs Malignant separation across PCA, SVD, t-SNE, and UMAP under identical preprocessing.
+              </p>
+            </div>
+            <button class="btn btn-primary" id="btnRunAllComparison">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Run All 4 Algorithms & Compare
+            </button>
+          </div>
+
+          <div class="comparison-grid-4">
+            <!-- PCA Mini -->
+            <div class="mini-chart-card">
+              <div id="miniChartPCA" class="mini-chart-canvas"></div>
+              <div class="mini-chart-meta">
+                <span id="miniMetaRuntimePCA">Runtime: -- ms</span>
+                <span id="miniMetaAccPCA" style="color: #6ee7b7">Acc: --%</span>
+              </div>
+            </div>
+
+            <!-- SVD Mini -->
+            <div class="mini-chart-card">
+              <div id="miniChartSVD" class="mini-chart-canvas"></div>
+              <div class="mini-chart-meta">
+                <span id="miniMetaRuntimeSVD">Runtime: -- ms</span>
+                <span id="miniMetaAccSVD" style="color: #6ee7b7">Acc: --%</span>
+              </div>
+            </div>
+
+            <!-- t-SNE Mini -->
+            <div class="mini-chart-card">
+              <div id="miniCharttSNE" class="mini-chart-canvas"></div>
+              <div class="mini-chart-meta">
+                <span id="miniMetaRuntimetSNE">Runtime: -- ms</span>
+                <span id="miniMetaAcctSNE" style="color: #6ee7b7">Acc: --%</span>
+              </div>
+            </div>
+
+            <!-- UMAP Mini -->
+            <div class="mini-chart-card">
+              <div id="miniChartUMAP" class="mini-chart-canvas"></div>
+              <div class="mini-chart-meta">
+                <span id="miniMetaRuntimeUMAP">Runtime: -- ms</span>
+                <span id="miniMetaAccUMAP" style="color: #6ee7b7">Acc: --%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           SECTION 5: OBSERVATIONS & RESULTS
+           ==================================================================== -->
+      <section class="lab-section" id="observations">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <span class="section-number">Section 05</span>
+            <h3 class="section-title">Observations & Quantitative Results</h3>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-secondary" id="btnExportCSV">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              Download Results (CSV)
+            </button>
+            <a href="report.html" class="btn btn-primary" target="_blank">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+              Open Academic Report
+            </a>
+          </div>
+        </div>
+
+        <!-- Comparative Observations Table -->
+        <div class="results-table-card">
+          <div class="results-table-header">
+            <div>
+              <h4 style="font-size: 1.1rem; color: var(--text-primary); font-weight: 700;">Empirical Benchmarking Table</h4>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                Direct comparison of runtime efficiency and Logistic Regression classification metrics (70% train / 30% test split).
+              </p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th>Representation</th>
+                  <th>Mathematical Family</th>
+                  <th>Dimensions</th>
+                  <th>Explained Variance</th>
+                  <th>Runtime</th>
+                  <th>Accuracy</th>
+                  <th>Precision</th>
+                  <th>Recall</th>
+                  <th>F1-Score</th>
+                </tr>
+              </thead>
+              <tbody id="resultsTableBody">
+                <!-- Dynamically populated from actual experiment runs -->
+                <tr>
+                  <td colspan="9" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                    Computing benchmark values...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Model Comparison & Feature Importance Charts -->
+        <div class="sub-charts-grid">
+          <div class="sub-chart-card">
+            <div id="modelComparisonCanvas" class="sub-chart-canvas"></div>
+          </div>
+          <div class="sub-chart-card">
+            <div id="resultsFeatureImportanceCanvas" class="sub-chart-canvas"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           SECTION 6: CONTRIBUTORS
+           ==================================================================== -->
+      <section class="lab-section" id="contributors">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <span class="section-number">Section 06</span>
+            <h3 class="section-title">Project Team & Contributors</h3>
+          </div>
+          <p class="section-desc">
+            Virtual laboratory experiment created for Machine Learning laboratory demonstration. Student names and credentials below are editable.
+          </p>
+        </div>
+
+        <div class="contributors-grid">
+          <div class="contributor-card">
+            <div class="contributor-avatar">S1</div>
+            <div class="contributor-info">
+              <input type="text" class="contributor-name-input" value="Student Lead (Team Member 1)" title="Click to edit name">
+              <span class="contributor-role">Algorithm & Math Implementation</span>
+              <span class="contributor-meta">Roll No: 2024-ML-01 • Division A</span>
+            </div>
+          </div>
+
+          <div class="contributor-card">
+            <div class="contributor-avatar" style="background: linear-gradient(135deg, #06b6d4, #3b82f6);">S2</div>
+            <div class="contributor-info">
+              <input type="text" class="contributor-name-input" value="Team Member 2" title="Click to edit name">
+              <span class="contributor-role">Data Preprocessing & Evaluation</span>
+              <span class="contributor-meta">Roll No: 2024-ML-02 • Division A</span>
+            </div>
+          </div>
+
+          <div class="contributor-card">
+            <div class="contributor-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">S3</div>
+            <div class="contributor-info">
+              <input type="text" class="contributor-name-input" value="Team Member 3" title="Click to edit name">
+              <span class="contributor-role">Interactive Visualization & UI</span>
+              <span class="contributor-meta">Roll No: 2024-ML-03 • Division A</span>
+            </div>
+          </div>
+
+          <div class="contributor-card">
+            <div class="contributor-avatar" style="background: linear-gradient(135deg, #ec4899, #8b5cf6);">S4</div>
+            <div class="contributor-info">
+              <input type="text" class="contributor-name-input" value="Team Member 4" title="Click to edit name">
+              <span class="contributor-role">Academic Documentation & Report</span>
+              <span class="contributor-meta">Roll No: 2024-ML-04 • Division A</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <p>
+        <strong>Dimensionality Reduction Virtual Laboratory</strong> • College Machine Learning Laboratory Coursework
+      </p>
+      <p style="margin-top: 6px;">
+        Dataset Source: <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/wdbc.data" target="_blank" rel="noopener">UCI Machine Learning Repository (WDBC)</a> • Powered by Vanilla JavaScript, Plotly.js & Math Routines
+      </p>
+    </footer>
+  </main>
+
+  <!-- Application Modules -->
+  <script src="js/data.js"></script>
+  <script src="js/algorithms.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
+
